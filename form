@@ -1,69 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Reporting</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Reporting Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        form {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-  <h1>Employee Reporting Form</h1>
-  <form id="employeeForm" enctype="multipart/form-data">
+
+<h2>Employee Reporting Form</h2>
+
+<form id="reportForm">
     <!-- Employee ID -->
-    <label for="employeeID">Employee ID:</label><br>
-    <input type="text" id="employeeID" name="employeeID" required><br><br>
-    
+    <label for="employeeId">Employee ID:</label>
+    <input type="text" id="employeeId" placeholder="Enter your Employee ID" required>
+
     <!-- Take Picture -->
-    <label for="photo">Take a Picture:</label><br>
-    <input type="file" id="photo" name="photo" accept="image/*" capture="camera" required><br><br>
-    
-    <button type="submit">Submit</button>
-  </form>
+    <label for="photo">Take a Photo:</label>
+    <input type="file" id="photo" accept="image/*" capture="camera" required>
 
-  <script>
-    // Save and Load Employee ID in localStorage
-    const employeeIDField = document.getElementById('employeeID');
+    <!-- Submit Button -->
+    <button type="button" id="submitBtn">Submit</button>
+</form>
 
-    // Load the saved Employee ID on page load
+<script>
+    // Load Employee ID from localStorage on page load
     document.addEventListener('DOMContentLoaded', () => {
-      const savedID = localStorage.getItem('employeeID');
-      if (savedID) {
-        employeeIDField.value = savedID;
-      }
-    });
-
-    // Save Employee ID on change
-    employeeIDField.addEventListener('input', () => {
-      localStorage.setItem('employeeID', employeeIDField.value);
-    });
-
-    // Form submission
-    document.getElementById('employeeForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(e.target);
-      formData.append('timestamp', new Date().toISOString());
-
-      // Replace this with the actual location retrieval (if necessary)
-      const location = 'Placeholder for location data'; 
-      formData.append('location', location);
-
-      try {
-        const response = await fetch('YOUR_BACKEND_ENDPOINT', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          alert('Form submitted successfully!');
-          e.target.reset(); // Clear form after successful submission
-        } else {
-          alert('Error submitting the form.');
+        const savedEmployeeId = localStorage.getItem('employeeId');
+        if (savedEmployeeId) {
+            document.getElementById('employeeId').value = savedEmployeeId;
         }
-      } catch (error) {
-        console.error('Submission failed:', error);
-        alert('Failed to submit the form. Check the console for details.');
-      }
     });
-  </script>
+
+    // Save Employee ID to localStorage when submitted
+    document.getElementById('submitBtn').addEventListener('click', () => {
+        const employeeId = document.getElementById('employeeId').value;
+        const photoInput = document.getElementById('photo');
+
+        if (!employeeId || !photoInput.files.length) {
+            alert('Please fill in all fields and take a photo.');
+            return;
+        }
+
+        // Save Employee ID locally
+        localStorage.setItem('employeeId', employeeId);
+
+        // Prepare data to store
+        const file = photoInput.files[0];
+        const currentDate = new Date();
+        const data = {
+            employeeId,
+            photo: file.name, // Placeholder: file should be uploaded to a server
+            timestamp: currentDate.toISOString(),
+            location: 'Latitude, Longitude' // Placeholder: Replace with real location
+        };
+
+        console.log(data); // Debug: log data
+        alert('Form submitted successfully!');
+
+        // Placeholder for Excel integration
+        // You can send 'data' to a server-side script that writes it to an Excel file.
+    });
+</script>
+
 </body>
 </html>
