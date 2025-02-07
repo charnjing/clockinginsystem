@@ -181,12 +181,37 @@
             syncOfflineData(); // Auto-sync when page loads
 
             // Fetch the employee names and departments from the Google Sheet
-            google.script.run.withSuccessHandler((data) => {
-                const names = data.names; // Array of employee names from Column A
-                const departments = data.departments; // Array of departments from Column C
-                populateDropdowns(names, departments);
-            }).getEmployeeData();
-        };
+        function fetchDataFromGoogleSheet() {
+          const webAppUrl = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+        
+          // Check if the data is already saved in localStorage (for offline use)
+          if (localStorage.getItem('employeeData')) {
+            const data = JSON.parse(localStorage.getItem('employeeData'));
+            populateDropdown(data.names, data.departments);
+            return; // Exit function if data is available offline
+          }
+        
+          // Fetch employee data from Google Apps Script Web App if online
+          $.get(webAppUrl, function(data) {
+            const names = data.names;
+            const departments = data.departments;
+        
+            // Save the data to localStorage for offline use
+            localStorage.setItem('employeeData', JSON.stringify({ names, departments }));
+        
+            // Populate the dropdown with the fetched data
+            populateDropdown(names, departments);
+          });
+        }
+        
+        // Function to populate the dropdown with names and departments
+        function populateDropdown(names, departments) {
+          const dropdown = $('#employee');
+          names.forEach((name, index) => {
+            const department = departments[index];
+            dropdown.append(`<option value="${name}">${name} - ${department}</option>`);
+          });
+        }
 
         function capturePhoto() {
             const video = document.getElementById("video");
