@@ -1,19 +1,15 @@
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open('my-cache').then((cache) => {
-            return cache.addAll([
-                '/',
-                '/index.html'
-                // Add other assets you want to cache for offline use
-            ]);
-        })
-    );
+// Service Worker (sw.js) for offline support
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open("offline-cache").then((cache) => {
+      return cache.addAll(["index.html", "script.js", "style.css"]);
+    })
+  );
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            return cachedResponse || fetch(event.request);
-        })
-    );
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
 });
