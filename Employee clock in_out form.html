@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Clock-In/Out</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fb;
+            margin: 0;
+            padding: 0;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            padding-top: 30px;
+        }
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: block;
+            color: #555;
+        }
+        select, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+        select {
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #FFA500;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #FFA500;
+        }
+        .capture-container {
+            text-align: center;
+        }
+        .capture-container video {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+        .capture-container img {
+            max-width: 100%;
+            margin-top: 16px;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none;
+        }
+        .form-section {
+            margin-bottom: 24px;
+        }
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+        #submitBtn {
+            background-color: #FFA500; /* Original color */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #submitBtn:disabled {
+            background-color: #FFB84D; /* Lighter shade of #FFA500 */
+            cursor: not-allowed;
+            opacity: 0.6; /* Add slight transparency */
+        }        
+    </style>
+    <script>
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.html').then(registration => {
+              console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(error => {
+              console.log('Service Worker registration failed:', error);
+            });
+          });
+        }
+
+        let offlineEntries = JSON.parse(localStorage.getItem("offlineEntries")) || [];
+
+        function saveToLocal(data) {
+            offlineEntries.push(data);
+            localStorage.setItem("offlineEntries", JSON.stringify(offlineEntries));
+            alert("No internet. Submission saved offline.");
+        }
+
+        function submitForm() {
+            // Disable the submit button to prevent double submission
+            document.getElementById("submitBtn").disabled = true;
+
+            const name = document.getElementById("name").value;
+            const department = document.getElementById("department").value;
+            const clockType = document.getElementById("clockType").value;
+            const timestamp = new Date().toLocaleString();
+            const geolocation = document.getElementById("geolocation").value;
+            const photo = document.getElementById("photo").src || "";
+            const time = new Date().toLocaleTimeString();
+
+            const formData = { name, department, clockType, timestamp, geolocation, photo, time };
+
+            if (navigator.onLine) {
+                google.script.run.withSuccessHandler(response => {
+                    alert(response.message);
+                    document.getElementById("submitBtn").disabled = false; // Re-enable the submit button
+                }).submitForm(formData);
+            } else {
+                saveToLocal(formData);
+                document.getElementById("submitBtn").disabled = false; // Re-enable the submit button in case of offline
+            }
+        }
+
+        function syncOfflineData() {
+            if (navigator.onLine) {
+                const storedData = JSON.parse(localStorage.getItem("offlineEntries")) || [];
+                if (storedData.length > 0) {
+                    storedData.forEach(data => {
+                        google.script.run.submitForm(data);
+                    });
+                    localStorage.removeItem("offlineEntries"); // Clear storage after syncing
+                    offlineEntries = [];
+                    alert("Offline submissions synced successfully!");
+                }
+            }
+        }
+
+        function populateDropdowns(names, departments) {
+            const nameSelect = document.getElementById("name");
+            const deptSelect = document.getElementById("department");
+
+            // Populate employee names dropdown
+            names.forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                nameSelect.appendChild(option);
+            });
+
+            // Populate department dropdown
+            departments.forEach(department => {
+                const option = document.createElement("option");
+                option.value = department;
+                option.textContent = department;
+                deptSelect.appendChild(option);
+            });
+        }
+
+        window.onload = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    document.getElementById("geolocation").value = 
+                        position.coords.latitude + "," + position.coords.longitude;
+                });
+            }
+            syncOfflineData(); // Auto-sync when page loads
+
+            // Fetch the employee names and departments from the Google Sheet
+            google.script.run.withSuccessHandler((data) => {
+                const names = data.names; // Array of employee names from Column A
+                const departments = data.departments; // Array of departments from Column C
+                populateDropdowns(names, departments);
+            }).getEmployeeData();
+        };
+
+        function capturePhoto() {
+            const video = document.getElementById("video");
+            const canvas = document.getElementById("canvas");
+            const context = canvas.getContext("2d");
+
+            // Ensure the canvas size matches the video frame
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Capture the frame
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert to base64 and display the image
+            document.getElementById("photo").src = canvas.toDataURL("image/jpeg");
+
+            // Hide video and show the captured image
+            video.style.display = "none";
+            document.getElementById("photo").style.display = "block";
+            document.getElementById("captureBtn").style.display = "none";
+        }
+
+    </script>
+</head>
+<body>
+    <h2>Employee Clock-In/Out Form</h2>
+    <div class="form-container">
+        <div class="form-section">
+            <label for="name">Employee Name:</label>
+            <select id="name">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+
+        <div class="form-section">
+            <label for="department">Department:</label>
+            <select id="department">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+
+        <div class="form-section">
+            <label for="clockType">Clock In/Out:</label>
+            <select id="clockType">
+                <option value="Clock In">Clock In</option>
+                <option value="Clock Out">Clock Out</option>
+            </select>
+        </div>
+
+        <div class="form-section capture-container">
+            <label>Take Photo:</label><br>
+            <video id="video" autoplay></video><br>
+            <button id="captureBtn" onclick="capturePhoto()">Capture</button><br>
+            <canvas id="canvas" class="hidden"></canvas>
+            <img id="photo" class="hidden"><br><br>
+        </div>
+
+        <input type="hidden" id="geolocation">
+        <button id="submitBtn" onclick="submitForm()">Submit</button>
+    </div>
+
+    <script>
+        const video = document.getElementById("video");
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(err => alert("Camera access denied"));
+
+        window.addEventListener('online', syncOfflineData); // Auto-sync when internet returns
+    </script>
+</body>
+</html>
