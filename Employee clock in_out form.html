@@ -95,7 +95,7 @@
     <script>
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.html').then(registration => {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
               console.log('Service Worker registered with scope:', registration.scope);
             }).catch(error => {
               console.log('Service Worker registration failed:', error);
@@ -110,11 +110,11 @@
             localStorage.setItem("offlineEntries", JSON.stringify(offlineEntries));
             alert("No internet. Submission saved offline.");
         }
-
+        
         function submitForm() {
             // Disable the submit button to prevent double submission
             document.getElementById("submitBtn").disabled = true;
-
+        
             const name = document.getElementById("name").value;
             const department = document.getElementById("department").value;
             const clockType = document.getElementById("clockType").value;
@@ -122,18 +122,20 @@
             const geolocation = document.getElementById("geolocation").value;
             const photo = document.getElementById("photo").src || "";
             const time = new Date().toLocaleTimeString();
-
+        
             const formData = { name, department, clockType, timestamp, geolocation, photo, time };
-
+        
+            // Check if there's an internet connection
             if (navigator.onLine) {
-                google.script.run.withSuccessHandler(response => {
-                    alert(response.message);
-                    document.getElementById("submitBtn").disabled = false; // Re-enable the submit button
-                }).submitForm(formData);
+                // If online, send data to Google Apps Script for submission
+                sendFormToGoogleSheet(formData);
             } else {
-                saveToLocal(formData);
-                document.getElementById("submitBtn").disabled = false; // Re-enable the submit button in case of offline
+                // If offline, store the form submission data locally
+                storeFormSubmissionLocally(formData);
             }
+        
+            // Re-enable the submit button after submission (either online or offline)
+            document.getElementById("submitBtn").disabled = false;
         }
 
         function syncOfflineData() {
@@ -150,35 +152,18 @@
             }
         }
 
-        function populateDropdowns(names, departments) {
-            const nameSelect = document.getElementById("name");
-            const deptSelect = document.getElementById("department");
-
-            // Populate employee names dropdown
-            names.forEach(name => {
-                const option = document.createElement("option");
-                option.value = name;
-                option.textContent = name;
-                nameSelect.appendChild(option);
-            });
-
-            // Populate department dropdown
-            departments.forEach(department => {
-                const option = document.createElement("option");
-                option.value = department;
-                option.textContent = department;
-                deptSelect.appendChild(option);
+        function sendFormToGoogleSheet(formData) {
+            // Your Google Apps Script Web App URL to handle form submission
+            const submissionUrl = 'https://script.google.com/macros/s/AKfycby70P3W3dm3ZH--frRZj88z-XvNp8a21qgH2eddvwI/dev';
+        
+            $.post(submissionUrl, formData, function(response) {
+                alert(response.message); // Show success message
+                console.log('Form submitted successfully', response);
+            }).fail(function(error) {
+                console.log('Error submitting form:', error);
+                alert('There was an issue submitting the form.');
             });
         }
-
-        window.onload = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    document.getElementById("geolocation").value = 
-                        position.coords.latitude + "," + position.coords.longitude;
-                });
-            }
-            syncOfflineData(); // Auto-sync when page loads
 
             // Fetch the employee names and departments from the Google Sheet
         function fetchDataFromGoogleSheet() {
