@@ -280,6 +280,9 @@
             photo.style.display = 'block';
             video.style.display = 'none';
             captureButton.style.display = 'none'; // Hide capture button
+            // Enable the submit button after photo is taken
+            submitButton.disabled = false;
+            submitButton.style.opacity = "1";
         });
 
         // Load saved options from localStorage
@@ -436,6 +439,8 @@
 
         window.addEventListener('online', syncOfflineSubmissions);
         window.onload = () => { loadOptions(); if (navigator.onLine) syncOfflineSubmissions(); };
+        submitButton.disabled = true;
+        submitButton.style.opacity = "0.5";
 
         // Handle Edit Button Click (Password Prompt)
         editButton.addEventListener('click', () => {
