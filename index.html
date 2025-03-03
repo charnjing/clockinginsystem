@@ -16,6 +16,7 @@
             align-items: center;
             height: 100vh;
             color: #333;
+            overflow: hidden; /* Prevents body from scrolling */
         }
 
         .form-container {
@@ -26,8 +27,8 @@
             width: 100%;
             max-width: 500px;
             text-align: center;
-            overflow-y: auto; /* Make the form scrollable */
-            max-height: 80vh; /* Allow the form to scroll vertically */
+            max-height: 90vh; /* Limit form height */
+            overflow-y: auto; /* Enables scroll if content overflows */
         }
 
         h1 {
@@ -93,9 +94,9 @@
             color: white;
             border: none;
             cursor: pointer;
-            padding: 12px 0;
-            font-size: 1.1em;
-            width: 100%;
+            padding: 8px 0;
+            font-size: 0.9em;
+            width: 50%;
             border-radius: 8px;
             margin-top: 15px;
         }
@@ -181,21 +182,21 @@
         <h1>Offline Form</h1>
         <form id="submission-form">
             <label for="name">Name:</label>
-            <select id="name" name="name" required>
+            <select id="name" name="name">
                 <option value="John">John</option>
                 <option value="Alice">Alice</option>
                 <option value="Bob">Bob</option>
             </select>
 
             <label for="department">Department:</label>
-            <select id="department" name="department" required>
+            <select id="department" name="department">
                 <option value="HR">HR</option>
                 <option value="Finance">Finance</option>
                 <option value="Engineering">Engineering</option>
             </select>
 
             <label for="clock">Clock In/Out:</label>
-            <select id="clock" name="clock" required>
+            <select id="clock" name="clock">
                 <option value="Clock In">Clock In</option>
                 <option value="Clock Out">Clock Out</option>
             </select>
@@ -236,7 +237,7 @@
     </div>
 
     <script>
-        const adminPassword = "admin123"; // Admin password for editing
+        const adminPassword = "Zfs121019"; // Admin password for editing
         const form = document.getElementById('submission-form');
         const submitButton = document.getElementById('submit-button');
         const editButton = document.getElementById('edit-button');
@@ -293,26 +294,26 @@
         // Handle form submission
         form.addEventListener('submit', function(event) {
             event.preventDefault();
-            
-            // Check if all required fields are filled
-            const name = nameDropdown.value;
-            const department = deptDropdown.value;
-            const clock = clockDropdown.value;
-
-            if (!name || !department || !clock || !imageBase64) {
-                showPopup('Please fill in everything before submitting, otherwise, you will be marked "Absent"');
-                return;
-            }
-
             const formData = new FormData(form);
+            const name = formData.get('name');
+            const department = formData.get('department');
+            const clock = formData.get('clock');
             const date = new Date().toLocaleDateString();
             const time = new Date().toLocaleTimeString();
 
             // Disable submit button after submission
             submitButton.disabled = true;
 
-            // Save form data to localStorage with empty location
+            // Check if submission already exists in localStorage to avoid duplicates
             const submissions = JSON.parse(localStorage.getItem('submissions')) || [];
+            const existingSubmission = submissions.find(sub => sub.name === name && sub.department === department && sub.clock === clock && sub.date === date && sub.time === time);
+            if (existingSubmission) {
+                alert('Duplicate submission detected. This form has already been saved.');
+                submitButton.disabled = false;
+                return; // Prevent duplicate submission
+            }
+
+            // Save form data to localStorage with empty location
             submissions.push({ name, department, clock, date, time, image: imageBase64, location: '' });
             localStorage.setItem('submissions', JSON.stringify(submissions));
 
@@ -387,29 +388,48 @@
         // Close popup (keep the camera active)
         closePopupButton.addEventListener('click', () => {
             popup.style.display = 'none';
+            // Show camera feed again when popup closes
+            photo.style.display = 'none';
+            video.style.display = 'block';
+            captureButton.style.display = 'block';
         });
 
-        // Admin edit feature for adding name/department options
+        // Sync offline submissions when online
+        function syncOfflineSubmissions() {
+            const offlineSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
+            offlineSubmissions.forEach(sub => {
+                if (!sub.location) {
+                    getLocationAndSync(sub.name, sub.department, sub.clock, sub.date, sub.time, sub.image);
+                }
+            });
+        }
+
+        window.addEventListener('online', syncOfflineSubmissions);
+        window.onload = () => { loadOptions(); if (navigator.onLine) syncOfflineSubmissions(); };
+
+        // Handle Edit Button Click (Password Prompt)
         editButton.addEventListener('click', () => {
             const password = prompt("Enter admin password:");
             if (password === adminPassword) {
-                adminSection.style.display = 'block'; // Show edit options
+                adminSection.style.display = 'block'; // Show admin section if password is correct
             } else {
                 alert("Incorrect password.");
             }
         });
 
-        // Save edited options
+        // Handle Save Options
         saveOptionsButton.addEventListener('click', () => {
-            const newNames = editName.value.split('\n').map(name => `<option value="${name.trim()}">${name.trim()}</option>`).join('');
-            const newDepartments = editDept.value.split('\n').map(dept => `<option value="${dept.trim()}">${dept.trim()}</option>`).join('');
-            localStorage.setItem('names', newNames);
-            localStorage.setItem('departments', newDepartments);
-            loadOptions(); // Reload options after saving
+            const names = editName.value.trim().split('\n').map(name => `<option value="${name}">${name}</option>`).join('');
+            const departments = editDept.value.trim().split('\n').map(dept => `<option value="${dept}">${dept}</option>`).join('');
+
+            localStorage.setItem('names', names);
+            localStorage.setItem('departments', departments);
+
+            loadOptions(); // Update dropdown with new options
+            adminSection.style.display = 'none'; // Hide admin section
+            alert("Options saved successfully!");
         });
 
-        // Load options initially
-        loadOptions();
     </script>
 </body>
 </html>
