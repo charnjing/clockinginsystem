@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline Form</title>
+    <title>Clock In/Out Form</title>
     <style>
         /* Global styles */
         body {
@@ -303,6 +303,10 @@
 
             // Disable submit button after submission
             submitButton.disabled = true;
+            // Disable submit button after submission and make it lighter
+            submitButton.style.opacity = "0.5";  // Makes it visually lighter
+            submitButton.style.backgroundColor = "#d3d3d3";  // Light gray (optional)
+            submitButton.style.cursor = "not-allowed";  // Shows a disabled cursor
 
             // Check if submission already exists in localStorage to avoid duplicates
             const submissions = JSON.parse(localStorage.getItem('submissions')) || [];
