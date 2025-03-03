@@ -291,17 +291,6 @@
             if (savedDepts) deptDropdown.innerHTML = savedDepts;
         }
 
-        // Disable submit button function
-        function disableSubmitButton() {
-            submitButton.disabled = true;
-            submitButton.textContent = "Submitting...";
-            
-            // Re-enable after 15 seconds
-            setTimeout(() => {
-                submitButton.disabled = false;
-                submitButton.textContent = "Submit";
-            }, 15000);
-        }
 
         // Handle form submission
         form.addEventListener('submit', function(event) {
@@ -335,6 +324,15 @@
 
             // Disable submit button after submission
             submitButton.disabled = true;
+            // reduce opacity
+            submitButton.style.opacity = "0.5";
+        
+            // Re-enable after 15 seconds
+            setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.style.opacity = "1"; // Restore full opacity
+            }, 15000);
+
 
             // Check if submission already exists in localStorage to avoid duplicates
             const submissions = JSON.parse(localStorage.getItem('submissions')) || [];
