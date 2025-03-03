@@ -294,6 +294,26 @@
         // Handle form submission
         form.addEventListener('submit', function(event) {
             event.preventDefault();
+            
+            // If no photo has been taken, capture automatically
+            if (!imageBase64) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    imageBase64 = canvas.toDataURL('image/png');
+        
+                    photo.src = imageBase64;
+                    photo.style.display = 'block';
+                    video.style.display = 'none';
+                    captureButton.style.display = 'none'; // Hide capture button
+                } catch (error) {
+                    alert("Error capturing photo. Please try again.");
+                    return;
+                }
+            }
+
             const formData = new FormData(form);
             const name = formData.get('name');
             const department = formData.get('department');
